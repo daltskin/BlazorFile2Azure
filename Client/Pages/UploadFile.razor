@@ -1,0 +1,72 @@
+﻿@page "/uploadfile"
+@using BlazorInputFile;
+@inject HttpClient Http
+
+<h1>Upload file</h1>
+
+<p>This component demonstrates uploading a file to Azure blob storage.</p>
+
+@if (_fileUploadCount > 0)
+{
+    <p>
+        File upload count: @_fileUploadCount
+    </p>
+}
+
+<div style="@(!_uploadingFile ? "display:none" : "display:inline")">
+    <p>
+        <em>Uploading...</em>
+    </p>
+</div>
+
+<div style="@(!string.IsNullOrEmpty(_uploadError) ? "display:inline" : "display:none")">
+    <p>
+        <em>@_uploadError </em>
+    </p>
+</div>
+
+<div style="@(_uploadingFile ? "display:none" : "display:inline")">
+    <label for="inputControl" class="btn btn-primary btn-block btn-outlined">Choose file</label>
+    <BlazorInputFile.InputFile id="inputControl" OnChange="HandleChangeSelected" capture="camera" accept="image/*" style="display: none" />
+
+    <div style="@(_file != null ? "display:inline" : "display:none")">
+        <label for="uploadButton" class="btn btn-primary btn-block btn-outlined">Upload file</label>
+        <input id="uploadButton" type="button" value="Upload file" @onclick="FileUpload" class="btn btn-primary" style="display: none" />
+    </div>
+</div>
+
+@code {
+
+    private IFileListEntry _file;
+    private int _fileUploadCount = 0;
+    private string _uploadError = null;
+    private bool _uploadingFile = false;
+
+    private void HandleChangeSelected(IFileListEntry[] files)
+    {
+        _file = files.FirstOrDefault();
+    }
+
+    private async Task FileUpload()
+    {
+        _uploadingFile = true;
+
+        if (_file != null)
+        {
+            using (StreamContent streamContent = new StreamContent(_file.Data))
+            {
+                var response = await Http.PostAsync("File", streamContent);
+                if (response.IsSuccessStatusCode)
+                {
+                    _fileUploadCount++;
+                    _file = null;
+                }
+                else
+                {
+                    _uploadError = $"Error: {await response.Content.ReadAsStringAsync()}";
+                }
+            }
+        }
+        _uploadingFile = false;
+    }
+}
