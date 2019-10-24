@@ -14,7 +14,7 @@ The API controller that hosts the Blazor application and server-side API.
 
 ### Instructions
 
-Add your blob storage account details within the [appSettings.json](./BlazorFile2Azure/Server/appSettings.json)
+Add your blob storage account details within the appSettings.json file:
 
 | Key | Description |
 | ----- | ----- |
@@ -35,7 +35,7 @@ Blazor components support [attribute splatting and arbitary parameters](https://
     [Parameter(CaptureUnmatchedValues = false)] public Dictionary<string, object> UnmatchedParameters { get; set; }
 ```
 
-Meaning, that we can add the additional file input attributes such as capture mode and file type support eg:
+Meaning, that we can add the additional file input attributes such as capture mode and file type support :)
 ```
  <BlazorInputFile.InputFile id="inputControl" OnChange="HandleChangeSelected" capture="camera" accept="image/*" />
 ```
