@@ -54,7 +54,7 @@ namespace BlazorFile2Azure.Server.Controllers
                 StorageCredentials storageCredentials = new StorageCredentials(_configuration["blobStorageAccountName"], _configuration["blobStorageAccountKey"]);
                 CloudStorageAccount cloudStorageAccount = new CloudStorageAccount(storageCredentials, true);
                 CloudBlobClient cloudBlobClient = cloudStorageAccount.CreateCloudBlobClient();
-                CloudBlobContainer container = cloudBlobClient.GetContainerReference(_configuration["blobStorageConntainer"]);
+                CloudBlobContainer container = cloudBlobClient.GetContainerReference(_configuration["blobStorageContainer"]);
 
                 string fileName = $"{Guid.NewGuid().ToString()}.jpg";
                 CloudBlockBlob blockBlob = container.GetBlockBlobReference(fileName);

@@ -27,9 +27,9 @@
 
 <div style="@(_uploadingFile ? "display:none" : "display:inline")">
     <label for="inputControl" class="btn btn-primary btn-block btn-outlined">Choose file</label>
-    <BlazorInputFile.InputFile id="inputControl" OnChange="HandleChangeSelected" capture="camera" accept="image/*" style="display: none" />
+    <BlazorInputFile.InputFile id="inputControl" OnChange="HandleChangeSelected" capture="camera" accept="image/*" style="display: none" multiple />
 
-    <div style="@(_file != null ? "display:inline" : "display:none")">
+    <div style="@(_files?.Any() != null ? "display:inline" : "display:none")">
         <label for="uploadButton" class="btn btn-primary btn-block btn-outlined">Upload file</label>
         <input id="uploadButton" type="button" value="Upload file" @onclick="FileUpload" class="btn btn-primary" style="display: none" />
     </div>
@@ -38,28 +38,28 @@
 @code {
 
     private IFileListEntry _file;
+    private IFileListEntry[] _files;
     private int _fileUploadCount = 0;
     private string _uploadError = null;
     private bool _uploadingFile = false;
 
     private void HandleChangeSelected(IFileListEntry[] files)
     {
-        _file = files.FirstOrDefault();
+        _files = files;
     }
 
     private async Task FileUpload()
     {
         _uploadingFile = true;
 
-        if (_file != null)
+        foreach (var file in _files)
         {
-            using (StreamContent streamContent = new StreamContent(_file.Data))
+            using (StreamContent streamContent = new StreamContent(file.Data))
             {
                 var response = await Http.PostAsync("File", streamContent);
                 if (response.IsSuccessStatusCode)
                 {
                     _fileUploadCount++;
-                    _file = null;
                 }
                 else
                 {
