@@ -1,0 +1,109 @@
+﻿@page "/uploadfiledirect"
+@using BlazorInputFile;
+@using Azure.Core.Pipeline;
+@using Azure.Storage;
+@using Azure.Storage.Blobs;
+@using System.IO;
+
+<h1>Upload file directly to Azure Blob Storage using Azure Blob Storage SDK</h1>
+
+<p>This component demonstrates uploading a file to Azure blob storage.</p>
+
+@if (_fileUploadCount > 0)
+{
+    <p>
+        File upload count: @_fileUploadCount
+    </p>
+}
+
+<div style="@(!_uploadingFile ? "display:none" : "display:inline")">
+    <p>
+        <em>Uploading @_fileName ...</em>
+    </p>
+</div>
+
+<div style="@(!string.IsNullOrEmpty(_uploadError) ? "display:inline" : "display:none")">
+    <p>
+        <em>@_uploadError </em>
+    </p>
+</div>
+
+<div style="@(_uploadingFile ? "display:none" : "display:inline")">
+
+    <label for="blobConnection" class="btn btn-primary btn-block btn-outlined">Blob Connection String</label>
+        <input type="text" id="blobConnection" @bind-value="blobConnectionString" placeholder="Blob Connection String" class="form-control"/>
+
+        <label for="blobContainer" class="btn btn-primary btn-block btn-outlined">Blob Container</label>
+        <input type="text" id="blobContainer" @bind-value="blobContainer" placeholder="Blob Container" class="form-control"/>
+
+    <label for="inputControl" class="btn btn-primary btn-block btn-outlined">Choose file</label>
+    <BlazorInputFile.InputFile id="inputControl" OnChange="HandleChangeSelected" capture="camera" accept="image/*" style="display: none" multiple />
+
+    <div style="@(_files?.Any() != null ? "display:inline" : "display:none")">
+        <label for="uploadButton" class="btn btn-primary btn-block btn-outlined">Upload file</label>
+        <input id="uploadButton" type="button" value="Upload file" @onclick="FileUpload" class="btn btn-primary" style="display: none" />
+    </div>
+</div>
+
+@code {
+
+    private IFileListEntry[] _files;
+    private int _fileUploadCount = 0;
+
+    private string blobConnectionString = "";
+    private string blobContainer = "";
+    private string _uploadError = null;
+    private string _fileName = "";
+    private bool _uploadingFile = false;
+
+    private void HandleChangeSelected(IFileListEntry[] files)
+    {
+        if (files != null)
+        {
+            _files = files;
+        }
+    }
+
+    private async Task FileUpload()
+    {
+        var options = new BlobClientOptions
+        {
+            Transport = new HttpClientTransport(
+                new HttpClient { Timeout = TimeSpan.FromSeconds(20) })
+        };
+
+        BlobServiceClient service = new BlobServiceClient(blobConnectionString, options);
+        BlobContainerClient container = service.GetBlobContainerClient(blobContainer);
+
+        foreach (var file in _files)
+        {
+            _uploadingFile = true;
+
+            _fileName = file.Name;
+            Console.WriteLine($"Creating new blob client for: {_fileName}");
+
+            var blobClient = container.GetBlobClient(_fileName);
+
+            using (var ms = new MemoryStream())
+            {
+                await file.Data.CopyToAsync(ms);
+                ms.Position = 0;
+
+                Console.WriteLine($"Begin upload: {_fileName}");
+
+                // This will succeed for the first file then hang
+                await blobClient.UploadAsync(ms, overwrite: true);
+
+                // This will succeed for all files then hang
+                //blobClient.UploadAsync(ms, overwrite: true, System.Threading.CancellationToken.None);
+
+                _fileUploadCount++;
+
+                _uploadingFile = false;
+                Console.WriteLine($"End upload: {_fileName}");
+            }
+        }
+
+        _files = null;
+    }
+}

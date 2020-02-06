@@ -2,9 +2,9 @@
 @using BlazorInputFile;
 @inject HttpClient Http
 
-<h1>Upload file</h1>
+<h1>Upload file to Azure Blob Storage via Host API</h1>
 
-<p>This component demonstrates uploading a file to Azure blob storage.</p>
+<p>This component demonstrates uploading a file to Azure blob storage via Host API.</p>
 
 @if (_fileUploadCount > 0)
 {
@@ -67,6 +67,7 @@
                 }
             }
         }
+
         _uploadingFile = false;
     }
 }
