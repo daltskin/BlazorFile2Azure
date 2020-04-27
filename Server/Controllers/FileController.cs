@@ -1,7 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.Storage;
-using Microsoft.Azure.Storage.Auth;
-using Microsoft.Azure.Storage.Blob;
+﻿using Azure.Storage.Blobs;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
@@ -13,11 +11,21 @@ namespace BlazorFile2Azure.Server.Controllers
     [Route("[controller]")]
     public class FileController : Controller
     {
-        IConfiguration _configuration;
+        private BlobContainerClient _container;
+        static bool containerCreated = false;
 
         public FileController(IConfiguration configuration)
         {
-            _configuration = configuration;
+            string blobConnectionString = configuration["blobConnectionString"];
+            string blobContainerName = configuration["blobStorageContainer"];
+
+            if (!containerCreated)
+            {
+                _container = new BlobContainerClient(blobConnectionString, blobContainerName);
+                _container.CreateIfNotExists();
+
+                containerCreated = true;
+            }
         }
 
         [HttpGet]
@@ -25,25 +33,14 @@ namespace BlazorFile2Azure.Server.Controllers
         {
             List<string> results = new List<string>();
 
-            StorageCredentials storageCredentials = new StorageCredentials(_configuration["blobStorageAccountName"], _configuration["blobStorageAccountKey"]);
-            CloudStorageAccount cloudStorageAccount = new CloudStorageAccount(storageCredentials, true);
-            CloudBlobClient cloudBlobClient = cloudStorageAccount.CreateCloudBlobClient();
-            CloudBlobContainer container = cloudBlobClient.GetContainerReference(_configuration["blobStorageContainer"]);
+            string prefix = _container.Uri.ToString();
 
-            BlobContinuationToken continuationToken = null;
-            BlobResultSegment resultSegment = null;
-
-            do
+            await foreach (var blob in _container.GetBlobsAsync())
             {
-                resultSegment = await container.ListBlobsSegmentedAsync("", true, BlobListingDetails.None, 999, continuationToken, null, null);
-                foreach (CloudBlob blobItem in resultSegment.Results)
-                {
-                    results.Add(blobItem.StorageUri.PrimaryUri.ToString());
-                }
-                continuationToken = resultSegment.ContinuationToken;
-            } while (continuationToken != null);
+                results.Add($"{prefix}/{blob.Name}");
+            }
 
-            return results;
+            return results; 
         }
 
         [HttpPost]
@@ -51,16 +48,11 @@ namespace BlazorFile2Azure.Server.Controllers
         {
             try
             {
-                StorageCredentials storageCredentials = new StorageCredentials(_configuration["blobStorageAccountName"], _configuration["blobStorageAccountKey"]);
-                CloudStorageAccount cloudStorageAccount = new CloudStorageAccount(storageCredentials, true);
-                CloudBlobClient cloudBlobClient = cloudStorageAccount.CreateCloudBlobClient();
-                CloudBlobContainer container = cloudBlobClient.GetContainerReference(_configuration["blobStorageContainer"]);
-
                 string fileName = $"{Guid.NewGuid().ToString()}.jpg";
-                CloudBlockBlob blockBlob = container.GetBlockBlobReference(fileName);
-                await blockBlob.UploadFromStreamAsync(Request.Body);
+                var blob = _container.GetBlobClient(fileName);
+                await blob.UploadAsync(Request.Body);
             }
-            catch (Exception exp)
+            catch (Exception)
             {
                 return new BadRequestObjectResult("Error saving file");
             }

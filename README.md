@@ -18,8 +18,7 @@ Add your blob storage account details within the appSettings.json file:
 
 | Key | Description |
 | ----- | ----- |
-| blobStorageAccountKey | Blob storage account key secret |
-| blobStorageAccountName | The name of your storage account |
+| blobConnectionString | Azure Blob storage Connection String |
 | blobStorageContainer | The container name within your storage account |
 
 ### How it works
