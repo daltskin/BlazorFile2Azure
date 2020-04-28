@@ -1,7 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.Storage;
-using Microsoft.Azure.Storage.Auth;
-using Microsoft.Azure.Storage.Blob;
+﻿using Azure.Storage.Blobs;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
@@ -25,23 +23,13 @@ namespace BlazorFile2Azure.Server.Controllers
         {
             List<string> results = new List<string>();
 
-            StorageCredentials storageCredentials = new StorageCredentials(_configuration["blobStorageAccountName"], _configuration["blobStorageAccountKey"]);
-            CloudStorageAccount cloudStorageAccount = new CloudStorageAccount(storageCredentials, true);
-            CloudBlobClient cloudBlobClient = cloudStorageAccount.CreateCloudBlobClient();
-            CloudBlobContainer container = cloudBlobClient.GetContainerReference(_configuration["blobStorageContainer"]);
+            var container = GetContainer();
+            string prefix = container.Uri.ToString();
 
-            BlobContinuationToken continuationToken = null;
-            BlobResultSegment resultSegment = null;
-
-            do
+            await foreach (var blob in container.GetBlobsAsync())
             {
-                resultSegment = await container.ListBlobsSegmentedAsync("", true, BlobListingDetails.None, 999, continuationToken, null, null);
-                foreach (CloudBlob blobItem in resultSegment.Results)
-                {
-                    results.Add(blobItem.StorageUri.PrimaryUri.ToString());
-                }
-                continuationToken = resultSegment.ContinuationToken;
-            } while (continuationToken != null);
+                results.Add($"{prefix}/{blob.Name}");
+            }
 
             return results;
         }
@@ -51,21 +39,30 @@ namespace BlazorFile2Azure.Server.Controllers
         {
             try
             {
-                StorageCredentials storageCredentials = new StorageCredentials(_configuration["blobStorageAccountName"], _configuration["blobStorageAccountKey"]);
-                CloudStorageAccount cloudStorageAccount = new CloudStorageAccount(storageCredentials, true);
-                CloudBlobClient cloudBlobClient = cloudStorageAccount.CreateCloudBlobClient();
-                CloudBlobContainer container = cloudBlobClient.GetContainerReference(_configuration["blobStorageContainer"]);
-
+                var container = GetContainer();
                 string fileName = $"{Guid.NewGuid().ToString()}.jpg";
-                CloudBlockBlob blockBlob = container.GetBlockBlobReference(fileName);
-                await blockBlob.UploadFromStreamAsync(Request.Body);
+                var blob = container.GetBlobClient(fileName);
+                await blob.UploadAsync(Request.Body);
             }
-            catch (Exception exp)
+            catch (Exception)
             {
                 return new BadRequestObjectResult("Error saving file");
             }
 
             return new OkObjectResult("ok");
         }
+
+        #region helper
+        private BlobContainerClient GetContainer()
+        {
+            string blobConnectionString = _configuration["blobConnectionString"];
+            string blobContainerName = _configuration["blobStorageContainer"];
+
+            var container = new BlobContainerClient(blobConnectionString, blobContainerName);
+            container.CreateIfNotExists();
+
+            return container;
+        }
+        #endregion
     }
 }
