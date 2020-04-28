@@ -24,10 +24,10 @@ namespace BlazorFile2Azure.Server.Controllers
         {
             List<string> results = new List<string>();
 
-            InitContainer();
-            string prefix = _container.Uri.ToString();
+            var container = InitContainer();
+            string prefix = container.Uri.ToString();
 
-            await foreach (var blob in _container.GetBlobsAsync())
+            await foreach (var blob in container.GetBlobsAsync())
             {
                 results.Add($"{prefix}/{blob.Name}");
             }
@@ -40,9 +40,9 @@ namespace BlazorFile2Azure.Server.Controllers
         {
             try
             {
-                InitContainer();
+                var container = InitContainer();
                 string fileName = $"{Guid.NewGuid().ToString()}.jpg";
-                var blob = _container.GetBlobClient(fileName);
+                var blob = container.GetBlobClient(fileName);
                 await blob.UploadAsync(Request.Body);
             }
             catch (Exception)
@@ -54,13 +54,15 @@ namespace BlazorFile2Azure.Server.Controllers
         }
 
         #region helper
-        private void InitContainer()
+        private BlobContainerClient InitContainer()
         {
             string blobConnectionString = _configuration["blobConnectionString"];
             string blobContainerName = _configuration["blobStorageContainer"];
 
             var container = new BlobContainerClient(blobConnectionString, blobContainerName);
             container.CreateIfNotExists();
+
+            return container;
         }
         #endregion
     }
