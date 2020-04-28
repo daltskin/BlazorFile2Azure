@@ -12,7 +12,6 @@ namespace BlazorFile2Azure.Server.Controllers
     public class FileController : Controller
     {
         private readonly IConfiguration _configuration;
-        private readonly BlobContainerClient _container;
 
         public FileController(IConfiguration configuration)
         {
