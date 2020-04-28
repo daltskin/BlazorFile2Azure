@@ -2,7 +2,7 @@
 
 ### Blazor WebAssembly sample to upload a file to Azure Blob Storage via an API
 
-This application uses [Steve Sanderson's](https://twitter.com/stevensanderson) [BlazorInputFile](https://github.com/SteveSandersonMS/BlazorInputFile) to upload files and save them to blob storage.
+This application uses [Steve Sanderson's](https://twitter.com/stevensanderson) [BlazorInputFile](https://github.com/SteveSandersonMS/BlazorInputFile) to upload files and save them to Azure Blob Storage.
 
 #### BlazorFile2Azure.Client
 
@@ -14,7 +14,7 @@ The API controller that hosts the Blazor application and server-side API.
 
 ### Instructions
 
-Add your blob storage account details within the appSettings.json file:
+Add your Azure Blob Storage `connection string` and `container name` within the appSettings.json file:
 
 | Key | Description |
 | ----- | ----- |
@@ -38,7 +38,6 @@ Meaning, that we can add the additional file input attributes such as capture mo
 ```
  <BlazorInputFile.InputFile id="inputControl" OnChange="HandleChangeSelected" capture="camera" accept="image/*" />
 ```
-
 
 ### Known issue
 

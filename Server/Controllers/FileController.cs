@@ -11,21 +11,12 @@ namespace BlazorFile2Azure.Server.Controllers
     [Route("[controller]")]
     public class FileController : Controller
     {
-        private BlobContainerClient _container;
-        static bool containerCreated = false;
+        private readonly IConfiguration _configuration;
+        private readonly BlobContainerClient _container;
 
         public FileController(IConfiguration configuration)
         {
-            string blobConnectionString = configuration["blobConnectionString"];
-            string blobContainerName = configuration["blobStorageContainer"];
-
-            if (!containerCreated)
-            {
-                _container = new BlobContainerClient(blobConnectionString, blobContainerName);
-                _container.CreateIfNotExists();
-
-                containerCreated = true;
-            }
+            _configuration = configuration;
         }
 
         [HttpGet]
@@ -33,6 +24,7 @@ namespace BlazorFile2Azure.Server.Controllers
         {
             List<string> results = new List<string>();
 
+            InitContainer();
             string prefix = _container.Uri.ToString();
 
             await foreach (var blob in _container.GetBlobsAsync())
@@ -40,7 +32,7 @@ namespace BlazorFile2Azure.Server.Controllers
                 results.Add($"{prefix}/{blob.Name}");
             }
 
-            return results; 
+            return results;
         }
 
         [HttpPost]
@@ -48,6 +40,7 @@ namespace BlazorFile2Azure.Server.Controllers
         {
             try
             {
+                InitContainer();
                 string fileName = $"{Guid.NewGuid().ToString()}.jpg";
                 var blob = _container.GetBlobClient(fileName);
                 await blob.UploadAsync(Request.Body);
@@ -59,5 +52,16 @@ namespace BlazorFile2Azure.Server.Controllers
 
             return new OkObjectResult("ok");
         }
+
+        #region helper
+        private void InitContainer()
+        {
+            string blobConnectionString = _configuration["blobConnectionString"];
+            string blobContainerName = _configuration["blobStorageContainer"];
+
+            var container = new BlobContainerClient(blobConnectionString, blobContainerName);
+            container.CreateIfNotExists();
+        }
+        #endregion
     }
 }
