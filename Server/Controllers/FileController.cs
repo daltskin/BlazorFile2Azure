@@ -11,7 +11,7 @@ namespace BlazorFile2Azure.Server.Controllers
     [Route("[controller]")]
     public class FileController : Controller
     {
-        private readonly IConfiguration _configuration;
+        IConfiguration _configuration;
 
         public FileController(IConfiguration configuration)
         {
@@ -23,7 +23,7 @@ namespace BlazorFile2Azure.Server.Controllers
         {
             List<string> results = new List<string>();
 
-            var container = InitContainer();
+            var container = GetContainer();
             string prefix = container.Uri.ToString();
 
             await foreach (var blob in container.GetBlobsAsync())
@@ -39,7 +39,7 @@ namespace BlazorFile2Azure.Server.Controllers
         {
             try
             {
-                var container = InitContainer();
+                var container = GetContainer();
                 string fileName = $"{Guid.NewGuid().ToString()}.jpg";
                 var blob = container.GetBlobClient(fileName);
                 await blob.UploadAsync(Request.Body);
@@ -53,7 +53,7 @@ namespace BlazorFile2Azure.Server.Controllers
         }
 
         #region helper
-        private BlobContainerClient InitContainer()
+        private BlobContainerClient GetContainer()
         {
             string blobConnectionString = _configuration["blobConnectionString"];
             string blobContainerName = _configuration["blobStorageContainer"];
